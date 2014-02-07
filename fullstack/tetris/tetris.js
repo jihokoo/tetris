@@ -1,8 +1,9 @@
 function Tetris(width, height){
   this.width = width;
   this.height = height;
-  this.aliveCells = []
-  this.stillCells = []
+  this.aliveCells = [];
+  this.stillCells = [];
+  this.aliveShape;
 }
 
 //create an object for each piece and an object for the board
@@ -45,33 +46,9 @@ Tetris.prototype.setupBoardEvents = function() {
   });
 
 
-
-  // document.getElementById("play-button").onclick = function(event) {
-  //   // debugger;
-  //   var timeoutFunction = function() {
-  //     self.step();
-  //     if(isPlaying) {
-  //       setTimeout(timeoutFunction, 100);
-  //     }
-  //   };
-  //   isPlaying = true;
-  //   setTimeout(timeoutFunction, 100);
-  // };
-
-  // document.getElementById("pause-button").onclick = function(event) {
-  //   isPlaying = false;
-  // };
-
-  // document.getElementById("reset-button").onclick = function(event) {
-  //   self.resetRandom();
-  // };
-
-  // document.getElementById("end-button").onclick = function(event) {
-  //   self.clearAll();
-  // };
   var self = this
   playbutton = document.getElementById("play-button")
-  playbutton.onclick = function(){window.setInterval(function(){self.stepDown() || self.randomShapeGenerator()}, 1000)};
+  playbutton.onclick = function(){window.setInterval(function(){self.stepDown() || self.randomShapeGenerator()}, 1100)};
 
   document.onkeydown = function(event) {
     event = event || window.event;
@@ -141,16 +118,12 @@ Tetris.prototype.stepDown = function(){
   this.check();
   return value
 };
-//******
-//******
-//or since only four cells are moving at one time
-//just store them somewhere and then literally change the position
-//by one
+
+
 Tetris.prototype.stepSide = function(direction){
   var killArray = [];
   var createArray = [];
   var stillArray = []
-  var value = true
   var i = -1;
 
   if(direction==="Right"){
@@ -187,37 +160,58 @@ Tetris.prototype.stepSide = function(direction){
   this.aliveCells = createArray
   this.check();
   //introduce a delay to let adjusting
-  return value
 };
 
 Tetris.prototype.rotate = function(){
-  var killArray = [];
-  var createArray = [];
-  var shape = this.aliveCells[4]
-  if(shape = "leftSkewPoly"){
-
+  var neighborCells = []
+  var newCoordinates = []
+  var self = this
+  var counter = 0
+  console.log("hello")
+  if(this.aliveShape.name === "leftSkew" || this.aliveShape.name === "rightSkew" || this.aliveShape.name === "straightPoly"){
+    newCoordinates = self.aliveShape.rotate[self.aliveShape.mod]
+    self.aliveShape.mod = (self.aliveShape.mod + 1)%2
   }
-  else if(shape = "rightSkewPoly"){
-
+  else if(this.aliveShape.mod !== undefined){
+    newCoordinates = self.aliveShape.rotate[self.aliveShape.mod]
+    self.aliveShape.mod = (self.aliveShape.mod + 1)%4
   }
-  else if(shape = "leftLPoly"){
-
+  else{
+    neighborCells = this.aliveCells
+    this.aliveCells = []
+    counter = 4
   }
-  else if(shape = "rightLPoly"){
+  newCoordinates.forEach(function(element){
+      var x = +element.split(" ")[0]
+      var y = +element.split(" ")[1]
+      var a = +self.aliveCells[counter].id.split("-")[0]
+      var b = +self.aliveCells[counter].id.split("-")[1]
+      var replacer = document.getElementById((x+a)+"-"+(y+b))
+      if(replacer){
+        neighborCells.push(replacer)
+        counter++
+      }
+  })
 
+  this.aliveCells.forEach(function(element){
+    if(counter===4){
+      element.className = "dead"
+    }
+  });
+
+  neighborCells.forEach(function(element){
+    if(counter===4){
+      element.className = "dead"
+    }
+  });
+
+  if(counter===4){
+    this.aliveCells = neighborCells
   }
-  else if(shape = "teePoly"){
-
-  }
-  else if(shape = "straightPoly"){
-
+  else{
+    this.aliveShape.mod = this.aliveShape.mod - 1
   }
 };
-// i want a shape to be generated when the moving cells come to a stand still
-// [x-y+2, x+1-y+1,x-y , x-1-y-1]
-// [x+2-y-1, x+1-y-2, x-y-1, x-1-y]
-// []
-
 
 Tetris.prototype.iterateCells = function(iterator) {
   for(var y=0; y < this.height; y++) {
@@ -282,97 +276,79 @@ Tetris.prototype.moveDown = function(cellsToMove){
 
 
 Tetris.prototype.randomShapeGenerator = function(shapeCoordinates){
-  var shapeCoordinatesArray = [
-  ["3-0", "4-0", "5-0", "6-0"],
-  ["4-0", "5-0", "4-1", "5-1"],
-  ["3-0", "4-0", "4-1", "5-0"],
-  ["3-0", "3-1", "4-0", "5-0"],
-  ["3-0", "4-0", "5-0", "5-1"],
-  ["3-0", "4-0", "4-1", "5-1"],
-  ["3-1", "4-0", "4-1", "5-0"]]
+
+  var leftSkew = {
+    name: "leftSkew",
+    position: ["3-0", "4-0", "4-1", "5-1"],
+    rotate: [[(0)+" "+(0), (0)+" "+(0), (0)+" "+(-2), (-2)+" "+(0)],
+    [(0)+" "+0, (0)+" "+(0), (0)+" "+(2), (2)+" "+(0)]],
+    mod: 0
+  }
+
+  var rightSkew = {
+    name: "rightSkew",
+    position: ["3-1", "4-0", "4-1", "5-0"],
+    rotate: [[(2)+" "+(0), (0)+" "+(0), (0)+" "+(-2), (0)+" "+(0)],
+    [(-2)+" "+(0), (0)+" "+(0), (0)+" "+(2), (0)+" "+(0)]],
+    mod: 0
+  }
+
+  var leftPoly = {
+    name: "leftPoly",
+    position: ["3-0", "4-0", "5-0", "5-1"],
+    rotate: [[(2)+" "+(-1), (0)+" "+(1), (0)+" "+(0), (0)+" "+(0)],
+    [(-2)+" "+(1), (0)+" "+(0), (-2)+" "+(1), (0)+" "+(0)],
+    [(0)+" "+(0), (-1)+" "+(-2), (0)+" "+(0), (-1)+" "+(-2)],
+    [(0)+" "+(0), (1)+" "+(1), (2)+" "+(-1), (1)+" "+(2)]],
+    mod: 0
+  }
+
+  var rightPoly = {
+    name: "rightPoly",
+    position: ["3-0", "3-1", "4-0", "5-0"],
+    rotate: [[(1)+" "+(-1), (2)+" "+(0), (1)+" "+(-1), (0)+" "+(0)],
+    [(0-1)+" "+(2), (0)+" "+(0), (-1)+" "+(2), (0)+" "+(0)],
+    [(0)+" "+(-1), (-2)+" "+(0), (0)+" "+(0), (-2)+" "+(-1)],
+    [(0)+" "+(0), (0)+" "+(0), (0)+" "+(-1), (2)+" "+(1)]],
+    mod: 0
+  }
+
+  var straightPoly = {
+    name: "straightPoly",
+    position: ["3-0", "4-0", "5-0", "6-0"],
+    rotate: [[(2)+" "+(-1), (1)+" "+(1), (0)+" "+(0), (-1)+" "+(-2)],
+    [(-2)+" "+(1), (-1)+" "+(-1), (0)+" "+(0), (1)+" "+(2)]],
+    mod: 0
+  }
+
+  var teePoly = {
+    name: "teePoly",
+    position: ["3-0", "4-0", "4-1", "5-0"],
+    rotate: [[(0)+" "+(0), (0)+" "+(0), (0)+" "+(0), (-1)+" "+(-1)],
+    [(0)+" "+(1), (0)+" "+(0), (0)+" "+(0), (0+1)+" "+(2)],
+    [(1)+" "+(-2), (0)+" "+(0), (0)+" "+(0), (0)+" "+(-1)],
+    [(-1)+" "+(1), (0)+" "+(0), (0)+" "+(0), (0)+" "+(0)]],
+    mod: 0
+  }
+
+  var squarePoly = {
+    name: "squarePoly",
+    position: ["4-0", "5-0", "4-1", "5-1"],
+  }
+
+  var shapeCoordinatesArray = [leftSkew, rightSkew, leftPoly, rightPoly, straightPoly, teePoly, squarePoly]
+
   var randomIndex = Math.floor(Math.random()*shapeCoordinatesArray.length);
   var shape;
   var self = this
-  shapeCoordinatesArray[randomIndex].forEach(function(coordinate){
+  shapeCoordinatesArray[randomIndex].position.forEach(function(coordinate){
     document.getElementById(coordinate).className = "alive"
     self.aliveCells.push(document.getElementById(coordinate))
   })
-  if(randomIndex === 6){
-      shape = "leftSkewPoly"
-  }
-  else if(randomIndex === 5){
-    shape = "rightSkewPoly"
-  }
-  else if(randomIndex === 4){
-    shape = "leftLPoly"
-  }
-  else if(randomIndex === 3){
-    shape = "rightLPoly"
-  }
-  else if(randomIndex === 2){
-    shape = "teePoly"
-  }
-  else if(randomIndex === 1){
-    shape = "squarePoly"
-  }
-  else{
-    shape = "straightPoly"
-  }
-  return this.aliveCells
+  this.aliveShape = shapeCoordinatesArray[randomIndex];
+  console.log(this.aliveShape)
   // this.stepDown();
 }
-// i want a shape to be generated when the moving cells come to a stand still
-
-
-
-// Tetris.prototype.straightPoly = function(){
-//   document.getElementById("3-0").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-//   document.getElementById("6-0").className = "alive";
-// };
-
-// Tetris.prototype.squarePoly = function(){
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-//   document.getElementById("4-1").className = "alive";
-//   document.getElementById("5-1").className = "alive";
-// };
-
-// Tetris.prototype.teePoly = function(){
-//   document.getElementById("3-0").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("4-1").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-// };
-
-// Tetris.prototype.rightLPoly = function(){
-//   document.getElementById("3-0").className = "alive";
-//   document.getElementById("3-1").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-// };
-
-// Tetris.prototype.leftLPoly = function(){
-//   document.getElementById("3-0").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-//   document.getElementById("5-1").className = "alive";
-// };
-
-// Tetris.prototype.rightSkewPoly = function(){
-//   document.getElementById("3-0").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("4-1").className = "alive";
-//   document.getElementById("5-1").className = "alive";
-// };
-
-// Tetris.prototype.leftSkewPoly = function(){
-//   document.getElementById("3-1").className = "alive";
-//   document.getElementById("4-0").className = "alive";
-//   document.getElementById("4-1").className = "alive";
-//   document.getElementById("5-0").className = "alive";
-// };
 
 startGame = function () {
   var game = new Tetris(10,18);
@@ -381,20 +357,7 @@ startGame = function () {
 };
 
 startGame();
-//so there are 7 different shapes which should be input at random
-//and they time sequence should be set
-//if the shape hits the bottom before the time interval is through
-//then the next shape should pop up
-//left, right, down key should be a different step function
-//up is a rotating key
-//once the shapes stack up beyond 18 blocks, the game is over
 
+//make the buttons work
+//make game end when it reaches the top
 
-//the rightmost block is block position 6
-
-//there isn't going to be a step button this time, because tetris
-//is a continuous game. instead the play button will function as the
-//autoplay button that steps the shape down one block
-
-
-//when i rotate, just change the coordinates a little
